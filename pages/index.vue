@@ -93,10 +93,10 @@ export default {
       }
     }, 60000)
 
-    const ccStreamer = new WebSocket(
+    const STREAM = new WebSocket(
       'wss://streamer.cryptocompare.com/v2?api_key=' + API_KEY
     )
-    ccStreamer.onopen = function onStreamOpen() {
+    STREAM.onopen = function onStreamOpen() {
       const subRequest = {
         action: 'SubAdd',
         subs: [
@@ -106,10 +106,10 @@ export default {
           '5~CCCAGG~XRP~USD',
         ],
       }
-      ccStreamer.send(JSON.stringify(subRequest))
+      STREAM.send(JSON.stringify(subRequest))
     }
 
-    ccStreamer.onmessage = function onStreamMessage(message) {
+    STREAM.onmessage = function onStreamMessage(message) {
       const RESPONSE = JSON.parse(message.data)
       const COIN_TYPES = []
 
@@ -124,7 +124,11 @@ export default {
 
           if (RESPONSE.FROMSYMBOL === COIN_TYPE) {
             if (RESPONSE.PRICE) {
-              VM.streamData[COIN_KEY].lastPrice = RESPONSE.PRICE
+              if ((RESPONSE.PRICE * 10000) % 1) {
+                VM.streamData[COIN_KEY].lastPrice = RESPONSE.PRICE.toFixed(4)
+              } else {
+                VM.streamData[COIN_KEY].lastPrice = RESPONSE.PRICE
+              }
             }
 
             return (VM.streamData[COIN_KEY].data = RESPONSE)
