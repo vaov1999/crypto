@@ -1,20 +1,24 @@
 <template>
   <div class="home">
     <TradeList :trade-list="streamData" />
-    <div class="charts"></div>
+    <client-only>
+      <Chart />
+    </client-only>
   </div>
 </template>
 
 <script>
 import TradeList from '@/components/TradeList'
+import Chart from '@/components/Chart'
 export default {
   name: 'PagesIndex',
-  components: { TradeList },
+  components: { Chart, TradeList },
   data() {
     return {
       streamData: {
         btc: {
           data: null,
+          id: 'BTC',
           lastPrice: null,
           priceChange: null,
           pairsTitle: 'USD | BTC',
@@ -23,6 +27,7 @@ export default {
         },
         bth: {
           data: null,
+          id: 'BTH',
           lastPrice: null,
           priceChange: null,
           pairsTitle: 'USD | BTH',
@@ -31,6 +36,7 @@ export default {
         },
         eth: {
           data: null,
+          id: 'ETH',
           lastPrice: null,
           priceChange: null,
           pairsTitle: 'USD | ETH',
@@ -39,11 +45,30 @@ export default {
         },
         xrp: {
           data: null,
+          id: 'XRP',
           lastPrice: null,
           priceChange: null,
           pairsTitle: 'USD | XRP',
           isActive: false,
           isDynamicPositive: null,
+        },
+      },
+      historyData: {
+        btc: {
+          data: null,
+          isActive: false,
+        },
+        bth: {
+          data: null,
+          isActive: false,
+        },
+        eth: {
+          data: null,
+          isActive: false,
+        },
+        xrp: {
+          data: null,
+          isActive: false,
         },
       },
     }
@@ -52,9 +77,21 @@ export default {
     const API_KEY =
       '63163fc38a6c7d6f2a83853c409af0f118be578f69e3d0a649c65cfcb6983606'
     const VM = this
+    const HOURLY_PAIR = 'histohour'
+    const MINUTE_PAIR = 'histominute'
 
-    this.getMinutePairs()
-    setInterval(() => this.getMinutePairs(), 60000)
+    for (const COIN_KEY in this.streamData) {
+      const COIN_TYPE = this.streamData[COIN_KEY].id
+      this.getPairs(COIN_KEY, COIN_TYPE, MINUTE_PAIR)
+      this.getPairs(COIN_KEY, COIN_TYPE, HOURLY_PAIR)
+    }
+
+    setInterval(() => {
+      for (const COIN_KEY in this.streamData) {
+        const COIN = this.streamData[COIN_KEY].id
+        this.getPairs(COIN_KEY, COIN, MINUTE_PAIR)
+      }
+    }, 60000)
 
     const ccStreamer = new WebSocket(
       'wss://streamer.cryptocompare.com/v2?api_key=' + API_KEY
@@ -74,96 +111,51 @@ export default {
 
     ccStreamer.onmessage = function onStreamMessage(message) {
       const RESPONSE = JSON.parse(message.data)
-      switch (RESPONSE.FROMSYMBOL) {
-        case 'BTC':
-          if (RESPONSE.PRICE) {
-            VM.streamData.btc.lastPrice = RESPONSE.PRICE
-          }
-          return (VM.streamData.btc.data = RESPONSE)
+      const COIN_TYPES = []
 
-        case 'ETH':
-          if (RESPONSE.PRICE) {
-            VM.streamData.eth.lastPrice = RESPONSE.PRICE
-          }
-          return (VM.streamData.eth.data = RESPONSE)
+      for (const COIN_KEY in VM.streamData) {
+        const COIN_TYPE = VM.streamData[COIN_KEY].id
+        COIN_TYPES.push(COIN_TYPE)
+      }
 
-        case 'BTH':
-          if (RESPONSE.PRICE) {
-            VM.streamData.bth.lastPrice = RESPONSE.PRICE.toFixed(4)
-          }
-          return (VM.streamData.bth.data = RESPONSE)
+      if (COIN_TYPES.includes(RESPONSE.FROMSYMBOL)) {
+        for (const COIN_KEY in VM.streamData) {
+          const COIN_TYPE = VM.streamData[COIN_KEY].id
 
-        case 'XRP':
-          if (RESPONSE.PRICE) {
-            VM.streamData.xrp.lastPrice = RESPONSE.PRICE
-          }
-          return (VM.streamData.xrp.data = RESPONSE)
+          if (RESPONSE.FROMSYMBOL === COIN_TYPE) {
+            if (RESPONSE.PRICE) {
+              VM.streamData[COIN_KEY].lastPrice = RESPONSE.PRICE
+            }
 
-        default:
-          console.log('WHAT??? ', RESPONSE)
+            return (VM.streamData[COIN_KEY].data = RESPONSE)
+          }
+        }
       }
     }
   },
   methods: {
     calculatePairChange(low, high, coin) {
-      const ACTION_1 = (low / high) * 100
-      const ACTION_2 = 100 - ACTION_1
+      const PAIR_CHANGE = 100 - (low / high) * 100
 
-      this.streamData[coin].isDynamicPositive = ACTION_2 >= 0
-
-      this.streamData[coin].priceChange = ACTION_2.toFixed(2)
-
-      console.log(
-        this.streamData[coin].priceChange,
-        this.streamData[coin].isDynamicPositive
-      )
+      this.streamData[coin].isDynamicPositive = PAIR_CHANGE >= 0
+      this.streamData[coin].priceChange = PAIR_CHANGE.toFixed(2)
     },
-    getMinutePairs() {
+    getPairs(coinKey, coinType, histoType) {
+      const MINUTE_PAIR = 'histominute'
       const LIMIT_COUNT = 200
       fetch(
-        `https://min-api.cryptocompare.com/data/v2/histominute?fsym=BTC&tsym=USD&limit=${LIMIT_COUNT}`
+        `https://min-api.cryptocompare.com/data/v2/${histoType}?fsym=${coinType}&tsym=USD&limit=${LIMIT_COUNT}`
       )
         .then((response) => response.json())
-        .then((res) =>
-          this.calculatePairChange(
-            res.Data.Data[0].low,
-            res.Data.Data[res.Data.Data.length - 1].high,
-            'btc'
-          )
-        )
-      fetch(
-        `https://min-api.cryptocompare.com/data/v2/histominute?fsym=ETH&tsym=USD&limit=${LIMIT_COUNT}`
-      )
-        .then((response) => response.json())
-        .then((res) =>
-          this.calculatePairChange(
-            res.Data.Data[0].low,
-            res.Data.Data[res.Data.Data.length - 1].high,
-            'eth'
-          )
-        )
-      fetch(
-        `https://min-api.cryptocompare.com/data/v2/histominute?fsym=BTH&tsym=USD&limit=${LIMIT_COUNT}`
-      )
-        .then((response) => response.json())
-        .then((res) =>
-          this.calculatePairChange(
-            res.Data.Data[0].low,
-            res.Data.Data[res.Data.Data.length - 1].high,
-            'bth'
-          )
-        )
-      fetch(
-        `https://min-api.cryptocompare.com/data/v2/histominute?fsym=XRP&tsym=USD&limit=${LIMIT_COUNT}`
-      )
-        .then((response) => response.json())
-        .then((res) =>
-          this.calculatePairChange(
-            res.Data.Data[0].low,
-            res.Data.Data[res.Data.Data.length - 1].high,
-            'xrp'
-          )
-        )
+        .then((res) => {
+          if (histoType === MINUTE_PAIR) {
+            this.calculatePairChange(
+              res.Data.Data[0].low,
+              res.Data.Data[res.Data.Data.length - 1].high,
+              coinKey
+            )
+          }
+        })
     },
   },
 }
@@ -171,7 +163,6 @@ export default {
 
 <style scoped lang="sass">
 .home
-  background-color: red
   height: calc(100vh - 60px)
   display: grid
   grid-template-columns: 530px 1fr

@@ -23,7 +23,12 @@ export default {
     sass: './assets/styles/variables.sass',
   },
 
-  plugins: [],
+  plugins: [
+    {
+      src: '~/plugins/amCharts.js',
+      ssr: false,
+    },
+  ],
 
   components: true,
 
