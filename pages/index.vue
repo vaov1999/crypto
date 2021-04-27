@@ -2,7 +2,7 @@
   <div class="home">
     <TradeList :trade-list="streamData" />
     <client-only>
-      <Chart />
+      <Chart :chart-data="historyData" />
     </client-only>
   </div>
 </template>
@@ -146,7 +146,10 @@ export default {
     },
     getPairs(coinKey, coinType, histoType) {
       const MINUTE_PAIR = 'histominute'
-      const LIMIT_COUNT = 200
+      let LIMIT_COUNT = null
+
+      histoType === MINUTE_PAIR ? (LIMIT_COUNT = 200) : (LIMIT_COUNT = 7)
+
       fetch(
         `https://min-api.cryptocompare.com/data/v2/${histoType}?fsym=${coinType}&tsym=USD&limit=${LIMIT_COUNT}`
       )
@@ -158,6 +161,8 @@ export default {
               res.Data.Data[res.Data.Data.length - 1].high,
               coinKey
             )
+          } else {
+            this.historyData[coinKey].data = res
           }
         })
     },
@@ -177,8 +182,4 @@ export default {
     flex-direction: column
   @media (max-width: $xs)
     height: calc(100vh - 30px)
-.charts
-  height: 100%
-  width: 100%
-  background-color: #2CA15B
 </style>

@@ -5,6 +5,12 @@
 <script>
 export default {
   name: 'Chart',
+  props: {
+    chartData: {
+      type: Object,
+      default: () => false,
+    },
+  },
   mounted() {
     const { am4core, am4charts } = this.$amchart()
     console.log('root amcharts', am4core, am4charts)
@@ -17,8 +23,19 @@ export default {
     let visits = 10
     for (let i = 1; i < 7; i++) {
       visits += Math.round((Math.random() < 0.5 ? 1 : -1) * Math.random() * 10)
-      data.push({ date: new Date(2018, 0, i), name: 'name' + i, value: visits })
+      data.push({
+        date: new Date(
+          new Date().getFullYear(),
+          new Date().getMonth(),
+          new Date().getDay()
+        ),
+        name: 'name' + i,
+        value: visits,
+      })
     }
+
+    console.log('DATA', data)
+    console.log('new DATA', new Date())
 
     chart.data = data
 
