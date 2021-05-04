@@ -1,7 +1,5 @@
 export default {
-  mode: 'universal',
-
-  target: 'server',
+  target: 'static',
 
   head: {
     title: process.env.npm_package_name || '',

@@ -1,13 +1,11 @@
 <template>
   <div class="home">
     <TradeList :trade-list="streamData" @toggleActiveCoin="toggleActiveCoin" />
-    <client-only>
-      <Chart
-        v-if="historyData[currentHistoryCoin].data"
-        :chart-data="historyData[currentHistoryCoin].data"
-      />
-      <ChartLoader v-else />
-    </client-only>
+    <Chart
+      v-if="historyData[currentHistoryCoin].data"
+      :chart-data="historyData[currentHistoryCoin].data"
+    />
+    <ChartLoader v-else />
   </div>
 </template>
 
