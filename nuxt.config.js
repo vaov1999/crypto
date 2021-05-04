@@ -14,7 +14,9 @@ export default {
     ],
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
   },
-
+  router: {
+    base: '/crypto/',
+  },
   css: [{ src: '@/assets/styles/main.sass', lang: 'sass' }],
 
   styleResources: {
