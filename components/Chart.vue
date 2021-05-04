@@ -11,49 +11,56 @@ export default {
       default: () => false,
     },
   },
+  watch: {
+    chartData(newChart, oldChart) {
+      this.initChart(newChart)
+    },
+  },
   mounted() {
-    const { am4core, am4charts } = this.$amchart()
-    const CHART = am4core.create(this.$refs.chartdiv, am4charts.XYChart)
+    this.initChart(false)
+  },
+  methods: {
+    initChart(newData) {
+      const { am4core, am4charts } = this.$amchart()
+      const CHART = am4core.create(this.$refs.chartdiv, am4charts.XYChart)
+      CHART.paddingRight = 20
 
-    CHART.paddingRight = 20
+      const DATA = []
 
-    const DATA = []
-    let VISITS = 10
+      const COIN_CHART = newData?.Data?.Data || this.chartData.Data.Data
 
-    for (let i = 1; i < 7; i++) {
-      VISITS += Math.round((Math.random() < 0.5 ? 1 : -1) * Math.random() * 10)
-      DATA.push({
-        date: new Date(
-          new Date().getFullYear(),
-          new Date().getMonth(),
-          new Date().getDay()
-        ),
-        name: 'name' + i,
-        value: VISITS,
+      COIN_CHART.forEach((item) => {
+        DATA.push({
+          date: new Date(item.time),
+          name: `${item.time}`,
+          value: item.high,
+        })
       })
-    }
 
-    CHART.data = DATA
+      console.log('GRAPHIC', DATA)
 
-    const DATE_AXIS = CHART.xAxes.push(new am4charts.DateAxis())
-    DATE_AXIS.renderer.grid.template.location = 0
+      CHART.data = DATA
 
-    const VALUE_AXIS = CHART.yAxes.push(new am4charts.ValueAxis())
-    VALUE_AXIS.tooltip.disabled = true
-    VALUE_AXIS.renderer.minWidth = 35
+      const DATE_AXIS = CHART.xAxes.push(new am4charts.DateAxis())
+      DATE_AXIS.renderer.grid.template.location = 0
 
-    const SERIES = CHART.series.push(new am4charts.LineSeries())
-    SERIES.dataFields.dateX = 'date'
-    SERIES.dataFields.valueY = 'value'
+      const VALUE_AXIS = CHART.yAxes.push(new am4charts.ValueAxis())
+      VALUE_AXIS.tooltip.disabled = true
+      VALUE_AXIS.renderer.minWidth = 35
 
-    SERIES.tooltipText = '{valueY.value}'
-    CHART.cursor = new am4charts.XYCursor()
+      const SERIES = CHART.series.push(new am4charts.LineSeries())
+      SERIES.dataFields.dateX = 'date'
+      SERIES.dataFields.valueY = 'value'
 
-    const scrollbarX = new am4charts.XYChartScrollbar()
-    scrollbarX.series.push(SERIES)
-    CHART.scrollbarX = scrollbarX
+      SERIES.tooltipText = '{valueY.value}'
+      CHART.cursor = new am4charts.XYCursor()
 
-    this.chart = CHART
+      const scrollbarX = new am4charts.XYChartScrollbar()
+      scrollbarX.series.push(SERIES)
+      CHART.scrollbarX = scrollbarX
+
+      this.chart = CHART
+    },
   },
 }
 </script>

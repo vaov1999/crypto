@@ -15,6 +15,7 @@
           :key="index"
           class="item"
           :class="{ 'item--active': item.isActive }"
+          @click="toggleActiveCoin(item)"
         >
           <td class="item-column">{{ item.pairsTitle }}</td>
           <td class="item-column">
@@ -42,6 +43,11 @@ export default {
     tradeList: {
       type: Object,
       default: () => false,
+    },
+  },
+  methods: {
+    toggleActiveCoin(coin) {
+      this.$emit('toggleActiveCoin', coin)
     },
   },
 }
@@ -76,6 +82,9 @@ export default {
       text-align: right
     .item
       height: 46px
+      cursor: pointer
+    .item:hover
+      background: $gd2
     .item--active
       background: $gd
     .item-column
@@ -100,7 +109,7 @@ export default {
         font-size: $fs4
   @media (max-width: $lg)
     overflow-y: auto
-    height: 300px
+    height: 400px
     border-right: none
     order: 2
     &__head

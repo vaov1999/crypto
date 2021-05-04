@@ -1,8 +1,12 @@
 <template>
   <div class="home">
-    <TradeList :trade-list="streamData" />
+    <TradeList :trade-list="streamData" @toggleActiveCoin="toggleActiveCoin" />
     <client-only>
-      <Chart :chart-data="historyData" />
+      <Chart
+        v-if="historyData[currentHistoryCoin].data"
+        :chart-data="historyData[currentHistoryCoin].data"
+      />
+      <ChartLoader v-else />
     </client-only>
   </div>
 </template>
@@ -10,9 +14,10 @@
 <script>
 import TradeList from '@/components/TradeList'
 import Chart from '@/components/Chart'
+import ChartLoader from '@/components/ChartLoader'
 export default {
   name: 'PagesIndex',
-  components: { Chart, TradeList },
+  components: { Chart, TradeList, ChartLoader },
   data() {
     return {
       streamData: {
@@ -55,41 +60,57 @@ export default {
       },
       historyData: {
         btc: {
+          id: 'BTC',
           data: null,
-          isActive: false,
+          isActive: true,
         },
         bth: {
           data: null,
+          id: 'BTH',
           isActive: false,
         },
         eth: {
           data: null,
+          id: 'ETH',
           isActive: false,
         },
         xrp: {
           data: null,
+          id: 'XRP',
           isActive: false,
         },
       },
     }
   },
+  computed: {
+    currentHistoryCoin() {
+      for (const key in this.historyData) {
+        if (this.historyData[key].isActive) {
+          return key
+        }
+      }
+
+      return false
+    },
+  },
   mounted() {
     const API_KEY =
       '63163fc38a6c7d6f2a83853c409af0f118be578f69e3d0a649c65cfcb6983606'
     const VM = this
-    const HOURLY_PAIR = 'histohour'
-    const MINUTE_PAIR = 'histominute'
+    const DAY_PAIR = 'histoday'
+    const HOUR_PAIR = 'histohour'
 
     for (const COIN_KEY in this.streamData) {
-      const COIN_TYPE = this.streamData[COIN_KEY].id
-      this.getPairs(COIN_KEY, COIN_TYPE, MINUTE_PAIR)
-      this.getPairs(COIN_KEY, COIN_TYPE, HOURLY_PAIR)
+      this.getPairs(COIN_KEY, this.streamData[COIN_KEY].id, HOUR_PAIR)
+    }
+
+    for (const COIN_KEY in this.historyData) {
+      this.getPairs(COIN_KEY, this.streamData[COIN_KEY].id, DAY_PAIR)
     }
 
     setInterval(() => {
       for (const COIN_KEY in this.streamData) {
-        const COIN = this.streamData[COIN_KEY].id
-        this.getPairs(COIN_KEY, COIN, MINUTE_PAIR)
+        this.getPairs(COIN_KEY, this.streamData[COIN_KEY].id, HOUR_PAIR)
       }
     }, 60000)
 
@@ -114,8 +135,7 @@ export default {
       const COIN_TYPES = []
 
       for (const COIN_KEY in VM.streamData) {
-        const COIN_TYPE = VM.streamData[COIN_KEY].id
-        COIN_TYPES.push(COIN_TYPE)
+        COIN_TYPES.push(VM.streamData[COIN_KEY].id)
       }
 
       if (COIN_TYPES.includes(RESPONSE.FROMSYMBOL)) {
@@ -138,6 +158,14 @@ export default {
     }
   },
   methods: {
+    toggleActiveCoin(item) {
+      for (const coin in this.streamData) {
+        this.streamData[coin].isActive = this.streamData[coin].id === item.id
+      }
+      for (const coin in this.historyData) {
+        this.historyData[coin].isActive = this.historyData[coin].id === item.id
+      }
+    },
     calculatePairChange(low, high, coin) {
       const PAIR_CHANGE = 100 - (low / high) * 100
 
@@ -145,17 +173,17 @@ export default {
       this.streamData[coin].priceChange = PAIR_CHANGE.toFixed(2)
     },
     getPairs(coinKey, coinType, histoType) {
-      const MINUTE_PAIR = 'histominute'
+      const HOUR_PAIR = 'histohour'
       let LIMIT_COUNT = null
 
-      histoType === MINUTE_PAIR ? (LIMIT_COUNT = 200) : (LIMIT_COUNT = 7)
+      histoType === HOUR_PAIR ? (LIMIT_COUNT = 10) : (LIMIT_COUNT = 100)
 
       fetch(
         `https://min-api.cryptocompare.com/data/v2/${histoType}?fsym=${coinType}&tsym=USD&limit=${LIMIT_COUNT}`
       )
         .then((response) => response.json())
         .then((res) => {
-          if (histoType === MINUTE_PAIR) {
+          if (histoType === HOUR_PAIR) {
             this.calculatePairChange(
               res.Data.Data[0].low,
               res.Data.Data[res.Data.Data.length - 1].high,
@@ -178,8 +206,9 @@ export default {
   @media (max-width: $xxl)
     grid-template-columns: 1fr 2fr
   @media (max-width: $lg)
+    height: calc(100vh - 87px)
     display: flex
     flex-direction: column
   @media (max-width: $xs)
-    height: calc(100vh - 30px)
+    height: calc(100vh - 57px)
 </style>
